@@ -104,19 +104,15 @@ with open("input.txt", "r") as input:
 
 The lines are in the form [LR]number.
 
-** Get sign
-
-L indicates -, R indicates +.
-
 ** Get number
 
-The rest of line is the number.
+Characters from 1 to the end of the string are the number.
 
 #+begin_src python :tangle 1.py :comments both
         number = int(line[1:])
 #+end_src
 
-** Add or subtract number to dial
+** Add or subtract number
 
 #+begin_src python :tangle 1.py :comments both
         first = line[0]
