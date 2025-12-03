@@ -102,20 +102,11 @@ with open("input.txt", "r") as input:
     for line in input:
 #+end_src
 
+The lines are in the form [LR]number.
+
 ** Get sign
 
 L indicates -, R indicates +.
-
-#+begin_src python :tangle 1.py :comments both
-        first = line[0]
-        if first == 'L':
-            sign = -1
-        elif first == 'R':
-            sign = 1
-        else:
-            print(f"unknown direction '{first}'")
-            sys.exit(1)
-#+end_src
 
 ** Get number
 
@@ -125,12 +116,17 @@ The rest of line is the number.
         number = int(line[1:])
 #+end_src
 
-** Add to dial
-
-Add number × sign to the dial.
+** Add or subtract number to dial
 
 #+begin_src python :tangle 1.py :comments both
-        d += (sign * number)
+        first = line[0]
+        if first == 'L':
+            d -= number
+        elif first == 'R':
+            d += number
+        else:
+            print(f"unknown direction '{first}'")
+            sys.exit(1)
 #+end_src
 
 ** Check if dial is 0
