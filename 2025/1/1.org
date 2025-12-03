@@ -36,16 +36,24 @@ the safe is actually a decoy. The actual password is the number of
 times the dial is left pointing at 0 after any rotation in the
 sequence.
 
-** Ideas
+** Imports
+
+sys is needed for sys.exit().
+
+#+begin_src python :tangle 1.py :comments both
+import sys
+#+end_src
+
+** Dial class
 
 In Python, create a src_python{Dial(int)} type. Overload addition and
 subtraction operators to apply src_python(%= 100} to the results.
 
 #+begin_src python :tangle 1.py :comments both
 class Dial(int):
+    """Dial class from 0-99. Uses modular arithmetic."""
 
-    def __init__(self):
-        self.value = 50
+    value: int = 50
 
     def __add__(self, other):
         return (self.value + int(other)) % 100
@@ -68,4 +76,76 @@ class Dial(int):
 
     def __repr__(self):
         return f"Dial({self.value})"
+#+end_src
+
+** Create a Dial.
+
+#+begin_src python :tangle 1.py :comments both
+d = Dial()
+#+end_src
+
+** Create a counter
+
+#+begin_src python :tangle 1.py :comments both
+counter = 0
+#+end_src
+
+** Open input file
+
+#+begin_src python :tangle 1.py :comments both
+with open("input.txt", "r") as input:
+#+end_src
+
+** Read lines
+
+#+begin_src python :tangle 1.py :comments both
+    for line in input:
+#+end_src
+
+** Get sign
+
+L indicates -, R indicates +.
+
+#+begin_src python :tangle 1.py :comments both
+        first = line[0]
+        if first == 'L':
+            sign = -1
+        elif first == 'R':
+            sign = 1
+        else:
+            print(f"unknown direction '{first}'")
+            sys.exit(1)
+#+end_src
+
+** Get number
+
+The rest of line is the number.
+
+#+begin_src python :tangle 1.py :comments both
+        number = int(line[1:])
+#+end_src
+
+** Add to dial
+
+Add number × sign to the dial.
+
+#+begin_src python :tangle 1.py :comments both
+        d += (sign * number)
+#+end_src
+
+** Check if dial is 0
+
+If the dial is at 0, increment the counter.
+
+#+begin_src python :tangle 1.py :comments both
+        if int(d) == 0:
+            counter += 1
+#+end_src
+
+** Print counter
+
+Once we've finished the input, print the counter.
+
+#+begin_src python :tangle 1.py :comments both
+print(counter)
 #+end_src
