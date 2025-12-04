@@ -40,7 +40,7 @@ sequence.
 
 sys is needed for sys.exit().
 
-#+begin_src python :tangle 1.py :comments both
+#+begin_src python :tangle 1a.py :comments both
 import sys
 #+end_src
 
@@ -49,56 +49,89 @@ import sys
 In Python, create a src_python{Dial(int)} type. Overload addition and
 subtraction operators to apply src_python(%= 100} to the results.
 
-#+begin_src python :tangle 1.py :comments both
-class Dial(int):
-    """Dial class from 0-99. Uses modular arithmetic."""
+#+begin_src python :tangle 1a.py :comments both
+class Dial(tuple):
+    """
+    Dial class from 0-99.
+
+    - Uses modular arithmetic.
+    - Counts rotations that pass 0.
+    """
 
     value: int = 50
+    count: int = 0
+
+    def __init__(self):
+        self = (self.value, self.count)
 
     def __add__(self, other):
-        return (self.value + int(other)) % 100
+        d = self
+
+        if isinstance(other, Dial):
+            d.count += other.count
+            d.value += other.value
+        else:
+            d.value += int(other)
+        d = (d.value, d.count)
+        return d
 
     def __sub__(self, other):
-        return (self.value - int(other)) % 100
+        d = self
+
+        if isinstance(other, Dial):
+            d.count -= other.count
+            d.value -= other.value
+        else:
+            d.value -= int(other)
+        d = (d.value, d.count)
+        return d
 
     def __iadd__(self, other):
-        self.value += int(other)
-        self.value %= 100
+        if isinstance(other, Dial):
+            self.count += other.count
+            self.value += other.value
+        else:
+            self.value += int(other)
+        self = (self.value, self.count)
         return self
 
     def __isub__(self, other):
-        self.value -= int(other)
-        self.value %= 100
+        if isinstance(other, Dial):
+            self.count -= other.count
+            self.value -= other.value
+        else:
+            self.value -= int(other)
+        self = (self.value, self.count)
         return self
 
     def __int__(self):
         return self.value
 
     def __repr__(self):
-        return f"Dial({self.value})"
+        return f"Dial({self.value},{self.count})"
 #+end_src
 
 ** Create a Dial.
 
-#+begin_src python :tangle 1.py :comments both
+#+begin_src python :tangle 1a.py :comments both
 d = Dial()
 #+end_src
 
 ** Create a counter
 
-#+begin_src python :tangle 1.py :comments both
+#+begin_src python :tangle 1a.py :comments both
 counter = 0
 #+end_src
 
 ** Open input file
 
-#+begin_src python :tangle 1.py :comments both
+#+begin_src python :tangle 1a.py :comments both
 with open("input.txt", "r") as input:
 #+end_src
 
 ** Read lines
 
-#+begin_src python :tangle 1.py :comments both
+#+begin_src python :tangle 1a.py :comments both
     for line in input:
 #+end_src
 
@@ -108,13 +141,13 @@ The lines are in the form [LR]number.
 
 Characters from 1 to the end of the string are the number.
 
-#+begin_src python :tangle 1.py :comments both
+#+begin_src python :tangle 1a.py :comments both
         number = int(line[1:])
 #+end_src
 
 ** Add or subtract number
 
-#+begin_src python :tangle 1.py :comments both
+#+begin_src python :tangle 1a.py :comments both
         first = line[0]
         if first == 'L':
             d -= number
@@ -129,7 +162,7 @@ Characters from 1 to the end of the string are the number.
 
 If the dial is at 0, increment the counter.
 
-#+begin_src python :tangle 1.py :comments both
+#+begin_src python :tangle 1a.py :comments both
         if int(d) == 0:
             counter += 1
 #+end_src
@@ -138,6 +171,115 @@ If the dial is at 0, increment the counter.
 
 Once we've finished the input, print the counter.
 
-#+begin_src python :tangle 1.py :comments both
+#+begin_src python :tangle 1a.py :comments both
 print(counter)
+#+end_src
+
+
+* 1b
+
+Like 1a, but now we count passing 0 during a rotation.
+
+Overload the tuple type in he Dial class to also count passes. The
+algorithm for counting passes can be added to the
+__add__/__iadd__/__sub__/__isub__ methods.
+
+In the additive case, just divide the result by 100.
+
+For the subtractive case, its a little more complicated.
+- If result < 0, that's 1 time
+- Then add abs(result) / 100
+
+I will also likely put this in just the add/sub versions, and call
+these from iadd/isub.
+
+** Imports
+
+sys is needed for sys.exit().
+
+#+begin_src python :tangle 1b.py :comments both
+import sys
+#+end_src
+
+** Dial class
+In Python, create a src_python{Dial(tuple)} type, with the tuple being
+(dial, count). Overload addition and subtraction operators to apply
+src_python(%= 100} to the results. Count rotations passing in count.
+
+#+begin_src python :tangle 1b.py :comments both
+class Dial(tuple):
+    """
+    Dial class from 0-99.
+
+    - Uses modular arithmetic.
+    - Counts rotations that pass 0.
+    """
+
+    value: int = 50
+    count: int = 0
+
+    def __new__(cls, *args, **kwargs):
+        instance = super().__new__(cls)
+        return instance
+
+    def __init__(self):
+        self = (self.value, self.count)
+
+    def __add__(self, other):
+        _new0 = tuple(self)
+
+        if isinstance(other, Dial):
+            _new0.count += other.count
+            _new0.value += other.value
+        else:
+            _new0.value += int(other)
+        _new0.count += _new0.value // 100
+        _new0.value %= 100
+        _new0 = (_new0.value, _new0.count)
+        return _new0
+
+    def __sub__(self, other):
+        _new1 = tuple(self)
+
+        if isinstance(other, Dial):
+            _new1.count -= other.count
+            _new1.value -= other.value
+        else:
+            _new1.value -= int(other)
+        if _new1.value <= 0:
+            _new1.count += 1
+            _new1.count += abs(_new1.value) // 100
+        _new1.value %= 100
+        _new1 = (_new1.value, _new1.count)
+        return _new1
+
+    def __iadd__(self, other):
+        if isinstance(other, Dial):
+            self.count += other.count
+            self.value += other.value
+        else:
+            self.value += int(other)
+        self.count += self.value // 100
+        self.value %= 100
+        self = (self.value, self.count)
+        return self
+
+    def __isub__(self, other):
+        if isinstance(other, Dial):
+            self.count -= other.count
+            self.value -= other.value
+        else:
+            self.value -= int(other)
+        if self.value <= 0:
+            self.count += 1
+            self.count += abs(self.value) // 100
+        self.value %= 100
+        self = (self.value, self.count)
+        return self
+
+    def __int__(self):
+        return self.value
+
+    def __repr__(self):
+        return f"Dial({self.value},{self.count})"
 #+end_src
