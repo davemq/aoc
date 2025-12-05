@@ -40,8 +40,8 @@ sequence.
 
 sys is needed for sys.exit().
 
-#+begin_src python :tangle 1.py :comments both
-  import sys
+#+begin_src python :tangle 1a.py :comments both
+import sys
 #+end_src
 
 ** Dial class
@@ -80,33 +80,218 @@ subtraction operators to apply src_python(%= 100} to the results.
 
 ** Create a Dial.
 
-#+begin_src python :tangle 1.py :comments both
-  d = Dial()
+#+begin_src python :tangle 1a.py :comments both
+d = Dial()
 #+end_src
 
 ** Create a counter
 
-#+begin_src python :tangle 1.py :comments both
-  counter = 0
+#+begin_src python :tangle 1a.py :comments both
+counter = 0
 #+end_src
 
 ** Process input file
 
-#+begin_src python :tangle 1.py :comments both
-  with open("input.txt", "r") as input:
-      for line in input:
-          # The lines are in the form [LR]number.
-          # Characters from 1 to the end of the string are the number.
-          number = int(line[1:])
-          first = line[0]
-          if first == 'L':
-              d -= number
-          elif first == 'R':
-              d += number
-          else:
-              print(f"unknown direction '{first}'")
-              sys.exit(1)
-          if int(d) == 0:
-              counter += 1
-  print(counter)
+#+begin_src python :tangle 1a.py :comments both
+with open("input.txt", "r") as input:
+#+end_src
+
+** Read lines
+
+#+begin_src python :tangle 1a.py :comments both
+    for line in input:
+#+end_src
+
+The lines are in the form [LR]number.
+
+** Get number
+
+Characters from 1 to the end of the string are the number.
+
+#+begin_src python :tangle 1a.py :comments both
+        number = int(line[1:])
+#+end_src
+
+** Add or subtract number
+
+#+begin_src python :tangle 1a.py :comments both
+        first = line[0]
+        if first == 'L':
+            d -= number
+        elif first == 'R':
+            d += number
+        else:
+            print(f"unknown direction '{first}'")
+            sys.exit(1)
+#+end_src
+
+** Check if dial is 0
+
+If the dial is at 0, increment the counter.
+
+#+begin_src python :tangle 1a.py :comments both
+        if int(d) == 0:
+            counter += 1
+#+end_src
+
+** Print counter
+
+Once we've finished the input, print the counter.
+
+#+begin_src python :tangle 1a.py :comments both
+print(counter)
+#+end_src
+
+
+* 1b
+
+Like 1a, but now we count passing 0 during a rotation.
+
+Overload the tuple type in he Dial class to also count passes. The
+algorithm for counting passes can be added to the
+__add__/__iadd__/__sub__/__isub__ methods.
+
+In the additive case, just divide the result by 100.
+
+For the subtractive case, its a little more complicated.
+- If result < 0, that's 1 time
+- Then add abs(result) / 100
+
+I will also likely put this in just the add/sub versions, and call
+these from iadd/isub.
+
+** Imports
+
+sys is needed for sys.exit().
+
+#+begin_src python :tangle 1b.py :comments both
+import sys
+#+end_src
+
+** Dial class
+In Python, create a src_python{Dial(list)} type, with the list being
+[value, count]. Overload addition and subtraction operators to apply
+src_python(%= 100} to the results. Count rotations passing in count.
+
+#+begin_src python :tangle 1b.py :comments both
+class Dial(list):
+    """
+    Dial class from 0-99.
+
+    - Uses modular arithmetic.
+    - Counts rotations that pass 0.
+
+    - Value is in [0]
+    - Count is in [1]
+    """
+
+    def __init__(self):
+        self.append(50)
+        self.append(0)
+
+    def __add__(self, other):
+        _new0 = self.copy()
+
+        if isinstance(other, Dial):
+            _new0[1] += other[1]
+            _new0[0] += other[0]
+        else:
+            _new0[0] += int(other)
+        _new0[1] += _new0[0] // 100
+        _new0[0] %= 100
+        return _new0
+
+    def __sub__(self, other):
+        _new1 = self.copy()
+
+        orig_value = _new1[0]
+        if isinstance(other, Dial):
+            _new1[1] -= other[1]
+            _new1[0] -= other[0]
+        else:
+            _new1[0] -= int(other)
+        if _new1[0] <= 0:
+            if orig_value != 0:
+                _new1[1] += 1
+            _new1[1] += abs(_new1[0]) // 100
+        _new1[0] %= 100
+        return _new1
+
+    def __iadd__(self, other):
+        if isinstance(other, Dial):
+            self[1] += other[1]
+            self[0] += other[0]
+        else:
+            self[0] += int(other)
+        self[1] += self[0] // 100
+        self[0] %= 100
+        return self
+
+    def __isub__(self, other):
+        orig_value = self[0]
+        if isinstance(other, Dial):
+            self[1] -= other[1]
+            self[0] -= other[0]
+        else:
+            self[0] -= int(other)
+        if self[0] <= 0:
+            if orig_value != 0:
+                self[1] += 1
+            self[1] += abs(self[0]) // 100
+        self[0] %= 100
+        return self
+
+    def __int__(self):
+        return self[0]
+#+end_src
+
+** Create a Dial.
+
+#+begin_src python :tangle 1b.py :comments both
+d = Dial()
+#+end_src
+
+** Process input file
+
+Open input file
+
+#+begin_src python :tangle 1b.py :comments both
+with open("input.txt", "r") as input:
+#+end_src
+
+Read lines
+
+#+begin_src python :tangle 1b.py :comments both
+    for line in input:
+#+end_src
+
+The lines are in the form [LR]number.
+
+Get number
+
+Characters from 1 to the end of the string are the number.
+
+#+begin_src python :tangle 1b.py :comments both
+        number = int(line[1:])
+#+end_src
+
+Add or subtract number
+
+#+begin_src python :tangle 1b.py :comments both
+        first = line[0]
+        if first == 'L':
+            d -= number
+        elif first == 'R':
+            d += number
+        else:
+            print(f"unknown direction '{first}'")
+            sys.exit(1)
+#+end_src
+
+** Print counter
+
+Once we've finished the input, print the counter.
+
+#+begin_src python :tangle 1b.py :comments both
+print(d[1])
 #+end_src
