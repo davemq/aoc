@@ -1,0 +1,128 @@
+* 2a
+
+As it turns out, one of the younger Elves was playing on a gift shop
+computer and managed to add a whole bunch of invalid product IDs to
+their gift shop database! Surely, it would be no trouble for you to
+identify the invalid product IDs for them, right?
+
+They've even checked most of the product ID ranges already; they only
+have a few product ID ranges (your puzzle input) that you'll need to
+check. For example:
+
+11-22,95-115,998-1012,1188511880-1188511890,222220-222224,
+1698522-1698528,446443-446449,38593856-38593862,565653-565659,
+824824821-824824827,2121212118-2121212124
+(The ID ranges are wrapped here for legibility; in your input, they
+appear on a single long line.)
+
+The ranges are separated by commas (,); each range gives its first ID
+and last ID separated by a dash (-).
+
+Since the young Elf was just doing silly patterns, you can find the
+invalid IDs by looking for any ID which is made only of some sequence
+of digits repeated twice. So, 55 (5 twice), 6464 (64 twice), and
+123123 (123 twice) would all be invalid IDs.
+
+None of the numbers have leading zeroes; 0101 isn't an ID at all. (101
+is a valid ID that you would ignore.)
+
+Your job is to find all of the invalid IDs that appear in the given
+ranges. In the above example:
+
+11-22 has two invalid IDs, 11 and 22.
+95-115 has one invalid ID, 99.
+998-1012 has one invalid ID, 1010.
+1188511880-1188511890 has one invalid ID, 1188511885.
+222220-222224 has one invalid ID, 222222.
+1698522-1698528 contains no invalid IDs.
+446443-446449 has one invalid ID, 446446.
+38593856-38593862 has one invalid ID, 38593859.
+The rest of the ranges contain no invalid IDs.
+Adding up all the invalid IDs in this example produces 1227775554.
+
+What do you get if you add up all of the invalid IDs?
+
+** Notes
+
+*** Invalid IDs
+
+Invalid IDs always have an even number of digits. If a range only has
+an odd number of digits, it has no invalid IDs.
+
+Invalid IDs start with [1-9]. Additional digits are in the [0-9]
+regular expression class.
+
+I'm thinking about using regular expressions to search for invalid
+IDs. A regular expression generator would be useful here.
+
+E.g. the first range in the list is 4077-5314. All of the IDs are 4
+digits long, so we should check this range. The repeating expression
+will be 2 digits long. We should check from 4040 to 5252. 4040 is out
+of range. We could check whether int(min[0:1]) < (min[2:3]) and
+skip over it as out of range. In this case start with
+(int(min[0:1]) + 1) * 101. If int(min[0:1]) >= (min[2:3]) then
+we can start with int(min[0:1]) * 101.
+
+*** Ranges
+
+The ranges are on a single line separated by commas (,). So read the
+line and split with ',' as the separator to get a list of ranges.
+
+The ranges are in the form minimum-maximum. So again, split the range
+string with '-' to get the min and max.
+
+** Code
+
+Imports
+
+#+begin_src python :tangle 2a.py :comments both
+import sys
+#+end_src
+
+Read the input file and parsing the ranges.
+
+#+begin_src python :tangle 2a.py :comments both
+ranges = []
+with open("input.txt", "r") as file:
+    for line in file:
+        line = line.rstrip('\n')
+        ranges += [r.split('-') for r in line.split(',')]
+#+end_src
+
+Set up a sum of invalid IDs.
+
+#+begin_src python :tangle 2a.py :comments both
+invalids_sum = 0
+#+end_src
+
+Walk through the ranges.
+- Grab first "half" of the minimum string. If the minimum string
+  length is odd, this may produce an initial candidate string that's
+  quite low
+- If the first half of the minimum string is 0 length, then set the
+  string to "1". This covers a range that starts between 1 and 9 and
+  may or may not end in a two digit number
+
+#+begin_src python :tangle 2a.py :comments both
+for r in ranges:
+    length = len(r[0]) >> 1
+    start = r[0][0:length]
+    if len(start) == 0:
+        start = "1"
+    loopstart = int(r[0])
+    loopend = int(r[1])
+    candidate = int(start + start)
+    while candidate < loopstart:
+        start = str(int(start) + 1)
+        candidate = int(start + start)
+    while candidate in range(loopstart, loopend + 1):
+        invalids_sum += candidate
+        start = str(int(start) + 1)
+        candidate = int(start + start)
+#+end_src
+
+Print sum of invalids
+
+#+begin_src python :tangle 2a.py :comments both
+print(invalids_sum)
+#+end_src
