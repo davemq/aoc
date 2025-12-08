@@ -120,3 +120,91 @@ Print sum of invalids
 #+begin_src python :tangle 2a.py :comments both
 print(invalids_sum)
 #+end_src
+
+* 2b
+
+#+begin_quote
+The clerk quickly discovers that there are still invalid IDs in the
+ranges in your list. Maybe the young Elf was doing other silly
+patterns as well?
+
+Now, an ID is invalid if it is made only of some sequence of digits
+repeated at least twice. So, 12341234 (1234 two times), 123123123 (123
+three times), 1212121212 (12 five times), and 1111111 (1 seven times)
+are all invalid IDs.
+#+end_quote
+
+#+begin_quote
+What do you get if you add up all of the invalid IDs using these new
+rules?
+#+end_quote
+
+I can reuse much of the code from 2a, but now instead of only dealing
+with the first half of the minimum range for the start, start with the
+first character of the mininum. Construct the starting string by
+multiplying the first character times the len of the minimum string.
+Use a set to figure out which IDs are invalid. That way duplicates
+only count once.
+
+After going through the single character strings, grab the first 2
+characters of the minimum string, and multiply times the half length
+of the minimum string. Repeat the process.
+
+Stop grabbing the N character prefix when N > len(minimum string) / 2.
+
+It would probably be best for debugability to add the invalid IDs from
+the set as you go along, and start with a clean set when we start
+looking at a new range.
+
+** Code
+
+Read the input file and parsing the ranges.
+
+#+begin_src python :tangle 2b.py :comments both
+ranges = []
+with open("input.txt", "r") as file:
+    for line in file:
+        line = line.rstrip('\n')
+        ranges += [r.split('-') for r in line.split(',')]
+#+end_src
+
+Set up a sum of invalid IDs.
+
+#+begin_src python :tangle 2b.py :comments both
+invalids_sum = 0
+#+end_src
+
+Main loop
+
+#+begin_src python :tangle 2b.py :comments both
+for r in ranges:
+    print(f"{r[0]}-{r[1]}")
+    invalids = set()
+    maxlength = len(r[1]) >> 1
+    if maxlength < 1:
+        maxlength = 1
+    print(f"{maxlength=}")
+    length = 1
+    while length <= maxlength:
+        start = "1" * length
+        loopstart = int(r[0])
+        loopend = int(r[1])
+        candidate = int(start * (len(r[1]) // length))
+        while candidate < loopstart:
+            start = str(int(start) + 1)
+            candidate = int(start * (len(r[1]) // length))
+        while candidate in range(loopstart, loopend + 1):
+            invalids.add(candidate)
+            start = str(int(start) + 1)
+            candidate = int(start * (len(r[1]) // length))
+        length += 1
+    print(f"{invalids=}")
+    for i in invalids:
+        invalids_sum += i
+#+end_src
+
+Print sum of invalids
+
+#+begin_src python :tangle 2b.py :comments both
+print(invalids_sum)
+#+end_src
