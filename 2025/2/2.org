@@ -73,12 +73,6 @@ string with '-' to get the min and max.
 
 ** Code
 
-Imports
-
-#+begin_src python :tangle 2a.py :comments both
-import sys
-#+end_src
-
 Read the input file and parsing the ranges.
 
 #+begin_src python :tangle 2a.py :comments both
