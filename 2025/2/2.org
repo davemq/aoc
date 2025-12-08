@@ -96,13 +96,19 @@ invalids_sum = 0
 #+end_src
 
 Walk through the ranges.
-- Check that min and max strings are same length
-- If min string length is odd, skip to next
+- Grab first "half" of the minimum string. If the minimum string
+  length is odd, this may produce an initial candidate string that's
+  quite low
+- If the first half of the minimum string is 0 length, then set the
+  string to "1". This covers a range that starts between 1 and 9 and
+  may or may not end in a two digit number
 
 #+begin_src python :tangle 2a.py :comments both
 for r in ranges:
     length = len(r[0]) >> 1
     start = r[0][0:length]
+    if len(start) == 0:
+        start = "1"
     loopstart = int(r[0])
     loopend = int(r[1])
     candidate = int(start + start)
