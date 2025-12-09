@@ -172,6 +172,26 @@ invalid IDs, and 10-16, which has 11 as an invalid ID.
 
 ** Code
 
+Add a function to split a range where the minimum and maximum values
+have a different number of digits, e.g. 85-102, into two ranges, each
+with minimum and maximum having the same number of digits
+
+#+begin_src python :tangle 2b.py :comments both
+def split_range(r):
+    minlen = len(r[0])
+    maxlen = len(r[1])
+    if minlen == maxlen:
+        return r
+
+    # create lower range from r[0] and "9" * minlen
+    lowrange = [r[0], "9" * minlen]
+
+    # create upper range from "1" * "0" * maxlen-1 and r[1]
+    upperrange = ["1" + "0" * (maxlen-1), r[1]]
+
+    return [lowrange, upperrange]
+#+end_src
+
 Read the input file and parsing the ranges.
 
 #+begin_src python :tangle 2b.py :comments both
@@ -180,6 +200,22 @@ with open("input.txt", "r") as file:
     for line in file:
         line = line.rstrip('\n')
         ranges += [r.split('-') for r in line.split(',')]
+print(f"{ranges=}")
+#+end_src
+
+Split ranges that cross length boundaries
+
+#+begin_src python :tangle 2b.py :comments both
+newr = []
+for r in ranges:
+    s = split_range(r)
+    if s == r:
+        newr.append(r)
+    else:
+        for i in s:
+            newr.append(i)
+ranges = newr
+print(f"{ranges=}")
 #+end_src
 
 Set up a sum of invalid IDs.
@@ -194,27 +230,26 @@ Main loop
 for r in ranges:
     print(f"{r[0]}-{r[1]}")
     invalids = set()
-    maxlength = len(r[1]) >> 1
+    maxlength = len(r[0]) >> 1
     if maxlength < 1:
-        maxlength = 1
+        continue
     print(f"{maxlength=}")
     length = 1
     while length <= maxlength:
-        start = "1" * length
+        start = r[0][0:length]
         loopstart = int(r[0])
         loopend = int(r[1])
-        candidate = int(start * (len(r[1]) // length))
+        candidate = int(start * (len(r[0]) // length))
         while candidate < loopstart:
             start = str(int(start) + 1)
-            candidate = int(start * (len(r[1]) // length))
+            candidate = int(start * (len(r[0]) // length))
         while candidate in range(loopstart, loopend + 1):
             invalids.add(candidate)
             start = str(int(start) + 1)
-            candidate = int(start * (len(r[1]) // length))
+            candidate = int(start * (len(r[0]) // length))
         length += 1
     print(f"{invalids=}")
-    for i in invalids:
-        invalids_sum += i
+    invalids_sum += sum(invalids)
 #+end_src
 
 Print sum of invalids
