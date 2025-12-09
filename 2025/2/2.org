@@ -156,6 +156,20 @@ It would probably be best for debugability to add the invalid IDs from
 the set as you go along, and start with a clean set when we start
 looking at a new range.
 
+** Issues
+
+I'm having issues with ranges that cross from N digits to N+1
+digits. I think I may be able to make things work better if I split
+these ranges into things like XXXX-9999 and 10000-YYYYY. The code is
+muddled trying to handle N or N+1 digits in naive ways. Splitting the
+range into two ranges should make things easier.
+
+There may also still be the corner case of 2-9, but I can add some
+special code for that.
+
+The input has a range of 2-16, so it can be split into 2-9, with no
+invalid IDs, and 10-16, which has 11 as an invalid ID.
+
 ** Code
 
 Read the input file and parsing the ranges.
