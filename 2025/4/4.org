@@ -1,0 +1,128 @@
+* 4
+** 4a
+
+#+begin_verse
+The rolls of paper (@) are arranged on a large grid; the Elves even
+have a helpful diagram (your puzzle input) indicating where everything
+is located.
+
+For example:
+
+..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.
+
+The forklifts can only access a roll of paper if there are fewer than
+four rolls of paper in the eight adjacent positions. If you can figure
+out which rolls of paper the forklifts can access, they'll spend less
+time looking and more time breaking down the wall to the cafeteria.
+
+In this example, there are 13 rolls of paper that can be accessed by a
+forklift (marked with x):
+
+..xx.xx@x.
+x@@.@.@.@@
+@@@@@.x.@@
+@.@@@@..@.
+x@.@@@@.@x
+.@@@@@@@.@
+.@.@.@.@@@
+x.@@@.@@@@
+.@@@@@@@@.
+x.x.@@@.x.
+
+Consider your complete diagram of the paper roll locations. How many
+rolls of paper can be accessed by a forklift?
+#+end_verse
+
+*** Idea
+
+- Read the data from the input file, and split into lines. So now we
+  have a list of strings, and can access different positions like a
+  two dimensional array, e.g. lines[0][0].[fn:1]
+- Create a function to get a position's neighbors' values as a list.
+  This helps deal with corner (heh) cases where a position may have no
+  neighbors in some direction(s). So instead of 8 neighbors like
+  positions in the middle, it may have as few as 3 neighbors. This
+  function will be aware of the edges.
+- Count how many neighbors have fewer than 4 rolls of paper in its
+  neighbors.
+
+*** Code
+
+**** Limits
+
+- Save the number of rows and columns.
+
+#+begin_src python :tangle 4a.py :comments both
+rows = 0
+columns = 0
+#+end_src
+
+**** "Forward" declaration of lines
+
+#+begin_src python :tangle 4a.py :comments both
+lines = []
+#+end_src
+
+**** Get neighbors
+
+We have an array thats rows × columns. This code is aware of how many
+rows and columns and doesn't try to e.g. include neighbors with
+negative coordinates.
+
+#+begin_src python :tangle 4a.py :comments both
+def get_neighbors(row, col):
+    if row < 0 or row >= rows or col < 0 or col >= columns:
+        return []               # error
+
+    neighbors = []
+    for r in range(row - 1, row + 2):
+        if r < 0 or r >= rows:
+            continue
+        for c in range(col - 1, col + 2):
+            if c < 0 or c >= columns:
+                continue
+            if r == row and c == col:
+                continue
+            neighbors.append(lines[r][c])
+
+    return neighbors
+#+end_src
+
+**** Read data
+
+#+begin_src python :tangle 4a.py :comments both
+with open("input.txt", "r") as f:
+    lines = f.read().splitlines()
+rows = len(lines)
+columns = len(lines[0])
+#+end_src
+
+**** Count rolls with fewer than 4 neighbors
+
+#+begin_src python :tangle 4a.py :comments both
+count = 0
+
+for r in range(rows):
+    for c in range(columns):
+        if lines[r][c] != '@':            # we don't care how many rolls are next to open spots
+            continue
+        if len([n for n in get_neighbors(r, c) if n == '@']) < 4:
+            count += 1
+
+print(count)
+#+end_src
+
+* Footnotes
+
+[fn:1]I could also use numpy for this, but this is only a 136×136
+array, so I'd spend more time learning how to use numpy and preparing
+the data than is really useful for this task. 
