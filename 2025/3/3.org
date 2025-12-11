@@ -130,3 +130,137 @@ with open("input.txt", "r") as f:
 #+begin_src python :tangle 3a.py :comments both
 print(joltage_sum)
 #+end_src
+
+** 3b
+
+#+begin_quote
+Now, you need to make the largest joltage by turning on exactly twelve batteries within each bank.
+
+The joltage output for the bank is still the number formed by the digits of the batteries you've turned on; the only difference is that now there will be 12 digits in each bank's joltage output instead of two.
+
+Consider again the example from before:
+
+987654321111111
+811111111111119
+234234234234278
+818181911112111
+Now, the joltages are much larger:
+
+In 987654321111111, the largest joltage can be found by turning on everything except some 1s at the end to produce 987654321111.
+In the digit sequence 811111111111119, the largest joltage can be found by turning on everything except some 1s, producing 811111111119.
+In 234234234234278, the largest joltage can be found by turning on everything except a 2 battery, a 3 battery, and another 2 battery near the start to produce 434234234278.
+In 818181911112111, the joltage 888911112111 is produced by turning on everything except some 1s near the front.
+The total output joltage is now much larger: 987654321111 + 811111111119 + 434234234278 + 888911112111 = 3121910778619.
+
+What is the new total output joltage?
+#+end_quote
+
+*** Idea
+
+Again, you could take a naive approach and try to search for all 9s,
+then 11 9s followed by and 8, etc. If this was a naive approach for
+part 1, it's /really/ naive for part 2. I imagine starting it and
+walking away for quite some time!
+
+Similar to part 1, but in this case you need to leave room for the
+additional digits for each search. So for each line you need to search
+for all 12 digits. The first digit search starts with
+"9\\d{11}".[fn:1] Of course, if the program doesn't find this pattern,
+then "8\\d{11}", "7\\d{11}", etc.
+
+Then for the next digit, start the search with "9\\d{10}".
+
+Another issue is tracking where we are in the string. I wonder if
+recursion might make this easier, rather than adding up all the
+offsets. Start with searching for 12 digits, then call again from
+within 12 to search for 11, etc. After you search for 1 digit, you
+should be able to just return it. For the 2 digit search, do your
+search for the first of 2, then call for the 1 digit search, then do a
+string add on the results "first + second".
+
+I'm going to start with this approach and see how it goes.
+
+**** Searhc optimization
+
+In working on the search function, I came across situations where the
+search is looking for N digits when there are exactly N digits in
+the string. It would be a nice optimization to detect this and just
+return the whole string, cutting off the recursion and search perhaps
+considerably.
+
+*** Code
+
+**** Imports
+
+#+begin_src python :tangle 3b.py :comments both
+import re
+import sys
+#+end_src
+
+**** Search function
+
+#+begin_src python :tangle 3b.py :comments both
+def search(s, digits):
+    """
+    Search str for digits \\d instances. Try to find the largest value by
+    starting the search with 9, then 8, etc.
+
+    An optimization occurs first. If we have exactly digits characters in s,
+    return s, as we assume all the characters are digits.
+
+    Once we find our first digit, recurse to find digits-1 digits. When that
+    value is returned, add it to our digit, then return.
+    """
+
+    if len(s) == digits:
+        return s
+
+    # I was a bit concerned by \\d{0} was invalid, but it seems okay
+    for d in range(9, -1, -1):
+        pat = str(d) + "\\d{" + str(digits - 1) + "}"
+
+        m = re.search(pat, s)
+        if m:
+            digit = str(d)
+            break
+
+    if not m:
+        sys.exit(f'can\'t find "{pat}" in "{s}"')
+
+    if digits <= 1:
+        return digit
+
+    # Get the rest of the digits
+    rest = search(s[m.start()+1:], digits-1)
+
+    return digit + rest
+#+end_src
+
+**** Set up sum
+
+#+begin_src python :tangle 3b.py :comments both
+joltage_sum = 0
+#+end_src
+
+**** Main loop
+
+Open the file and do the search line by line. Add the result to the
+sum.
+
+#+begin_src python :tangle 3b.py :comments both
+with open("input.txt", "r") as f:
+    for line in f:
+        joltage_sum += int(search(line, 12))
+#+end_src
+
+**** Print sum
+
+#+begin_src python :tangle 3b.py :comments both
+print(joltage_sum)
+#+end_src
+
+* Footnotes
+
+[fn:1] I'm using \d here instead of [0-9] as it should also work.
+There's a chance of picking up extra characters as digits with \d, but
+having seen the input file, this is not a concern.
