@@ -61,14 +61,14 @@ rolls of paper can be accessed by a forklift?
 
 - Save the number of rows and columns.
 
-#+begin_src python :tangle 4a.py :comments both
+#+begin_src python :tangle 4.py :comments both
 rows = 0
 columns = 0
 #+end_src
 
 **** "Forward" declaration of lines
 
-#+begin_src python :tangle 4a.py :comments both
+#+begin_src python :tangle 4.py :comments both
 lines = []
 #+end_src
 
@@ -78,7 +78,7 @@ We have an array thats rows × columns. This code is aware of how many
 rows and columns and doesn't try to e.g. include neighbors with
 negative coordinates.
 
-#+begin_src python :tangle 4a.py :comments both
+#+begin_src python :tangle 4.py :comments both
 def get_neighbors(row, col):
     if row < 0 or row >= rows or col < 0 or col >= columns:
         return []               # error
@@ -99,7 +99,7 @@ def get_neighbors(row, col):
 
 **** Read data
 
-#+begin_src python :tangle 4a.py :comments both
+#+begin_src python :tangle 4.py :comments both
 with open("input.txt", "r") as f:
     lines = f.read().splitlines()
 rows = len(lines)
@@ -108,17 +108,211 @@ columns = len(lines[0])
 
 **** Count rolls with fewer than 4 neighbors
 
-#+begin_src python :tangle 4a.py :comments both
-count = 0
+#+begin_src python :tangle 4.py :comments both
+def four_a():
+    count = 0
 
-for r in range(rows):
-    for c in range(columns):
-        if lines[r][c] != '@':            # we don't care how many rolls are next to open spots
-            continue
-        if len([n for n in get_neighbors(r, c) if n == '@']) < 4:
-            count += 1
+    for r in range(rows):
+        for c in range(columns):
+            if lines[r][c] != '@': # we don't care how many rolls are next to open spots
+                continue
+            if len([n for n in get_neighbors(r, c) if n == '@']) < 4:
+                count += 1
 
-print(count)
+    return(count)
+#+end_src
+
+** 4b
+
+#+begin_verse
+Now, the Elves just need help accessing as much of the paper as they can.
+
+Once a roll of paper can be accessed by a forklift, it can be removed. Once a roll of paper is removed, the forklifts might be able to access more rolls of paper, which they might also be able to remove. How many total rolls of paper could the Elves remove if they keep repeating this process?
+
+Starting with the same example as above, here is one way you could remove as many rolls of paper as possible, using highlighted @ to indicate that a roll of paper is about to be removed, and using x to indicate that a roll of paper was just removed:
+
+Initial state:
+..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.
+
+Remove 13 rolls of paper:
+..xx.xx@x.
+x@@.@.@.@@
+@@@@@.x.@@
+@.@@@@..@.
+x@.@@@@.@x
+.@@@@@@@.@
+.@.@.@.@@@
+x.@@@.@@@@
+.@@@@@@@@.
+x.x.@@@.x.
+
+Remove 12 rolls of paper:
+.......x..
+.@@.x.x.@x
+x@@@@...@@
+x.@@@@..x.
+.@.@@@@.x.
+.x@@@@@@.x
+.x.@.@.@@@
+..@@@.@@@@
+.x@@@@@@@.
+....@@@...
+
+Remove 7 rolls of paper:
+..........
+.x@.....x.
+.@@@@...xx
+..@@@@....
+.x.@@@@...
+..@@@@@@..
+...@.@.@@x
+..@@@.@@@@
+..x@@@@@@.
+....@@@...
+
+Remove 5 rolls of paper:
+..........
+..x.......
+.x@@@.....
+..@@@@....
+...@@@@...
+..x@@@@@..
+...@.@.@@.
+..x@@.@@@x
+...@@@@@@.
+....@@@...
+
+Remove 2 rolls of paper:
+..........
+..........
+..x@@.....
+..@@@@....
+...@@@@...
+...@@@@@..
+...@.@.@@.
+...@@.@@@.
+...@@@@@x.
+....@@@...
+
+Remove 1 roll of paper:
+..........
+..........
+...@@.....
+..x@@@....
+...@@@@...
+...@@@@@..
+...@.@.@@.
+...@@.@@@.
+...@@@@@..
+....@@@...
+
+Remove 1 roll of paper:
+..........
+..........
+...x@.....
+...@@@....
+...@@@@...
+...@@@@@..
+...@.@.@@.
+...@@.@@@.
+...@@@@@..
+....@@@...
+
+Remove 1 roll of paper:
+..........
+..........
+....x.....
+...@@@....
+...@@@@...
+...@@@@@..
+...@.@.@@.
+...@@.@@@.
+...@@@@@..
+....@@@...
+
+Remove 1 roll of paper:
+..........
+..........
+..........
+...x@@....
+...@@@@...
+...@@@@@..
+...@.@.@@.
+...@@.@@@.
+...@@@@@..
+....@@@...
+Stop once no more rolls of paper are accessible by a forklift. In this example, a total of 43 rolls of paper can be removed.
+
+Start with your original diagram. How many rolls of paper in total can be removed by the Elves and their forklifts?
+#+end_verse
+
+*** Ideas
+
+I already have the ability to find rolls (look for '@') and to figure
+out how many neighbors they have. I propose to copy the current list
+of strings for each round, and modify the copy. This can be done with
+newlines = lines.copy(). Then change the '@' to '.' in newlines[r][c]
+where lines[r][c] has fewer than 4 neighbors. At the end of the round,
+set lines = nlines.
+
+*** Code
+
+I've refactored the existing 4a code so most of this code is reused,
+except the loop that counts he rolls that have fewer than four
+neighbors, which is now in 4a().
+
+For this task, we create a new function remove_rolls() that removes
+eligible rolls and returns the count.
+
+4b() loops until remove_rolls() returns 0.
+
+**** Remove rolls
+
+This is similar to get_neighbors(), but removes the rolls from a copy
+of the list of strings by changing '@' characters to '.'.
+
+#+begin_src python :tangle 4.py :comments both 
+def remove_rolls():
+    global lines
+    
+    nlines = lines.copy()
+    count = 0
+
+    for r in range(rows):
+        for c in range(columns):
+            if lines[r][c] != '@': # we don't care how many rolls are next to open spots
+                continue
+            if len([n for n in get_neighbors(r, c) if n == '@']) < 4:
+                count += 1
+                newline = nlines[r][:c] + '.' + nlines[r][c + 1:]
+                nlines[r] = newline
+
+    lines = nlines
+    return count
+#+end_src
+
+**** 4b main
+
+Remove rolls in a loop until it returns 0. Track the total rolls
+removed.
+
+#+begin_src python :tangle 4.py :comments both
+def four_b():
+    total = 0
+
+    while (removed := remove_rolls()) != 0:
+        total += removed
+
+    return total
 #+end_src
 
 * Footnotes
