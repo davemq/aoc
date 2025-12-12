@@ -1,0 +1,219 @@
+* 5
+
+** 5a
+
+#+begin_verse
+The Elves in the kitchen explain the situation: because of their complicated new inventory management system, they can't figure out which of their ingredients are fresh and which are spoiled. When you ask how it works, they give you a copy of their database (your puzzle input).
+
+The database operates on ingredient IDs. It consists of a list of fresh ingredient ID ranges, a blank line, and a list of available ingredient IDs. For example:
+
+3-5
+10-14
+16-20
+12-18
+
+1
+5
+8
+11
+17
+32
+The fresh ID ranges are inclusive: the range 3-5 means that ingredient IDs 3, 4, and 5 are all fresh. The ranges can also overlap; an ingredient ID is fresh if it is in any range.
+
+The Elves are trying to determine which of the available ingredient IDs are fresh. In this example, this is done as follows:
+
+Ingredient ID 1 is spoiled because it does not fall into any range.
+Ingredient ID 5 is fresh because it falls into range 3-5.
+Ingredient ID 8 is spoiled.
+Ingredient ID 11 is fresh because it falls into range 10-14.
+Ingredient ID 17 is fresh because it falls into range 16-20 as well as range 12-18.
+Ingredient ID 32 is spoiled.
+So, in this example, 3 of the available ingredient IDs are fresh.
+
+Process the database file from the new inventory management system. How many of the available ingredient IDs are fresh?
+#+end_verse
+
+*** Ideas
+
+The overlapping ranges of fresh ingredentsThe Elves in the kitchen explain the situation: because of their complicated new inventory management system, they can't figure out which of their ingredients are fresh and which are spoiled. When you ask how it works, they give you a copy of their database (your puzzle input).
+
+The database operates on ingredient IDs. It consists of a list of fresh ingredient ID ranges, a blank line, and a list of available ingredient IDs. For example:
+
+3-5
+10-14
+16-20
+12-18
+
+1
+5
+8
+11
+17
+32
+The fresh ID ranges are inclusive: the range 3-5 means that ingredient IDs 3, 4, and 5 are all fresh. The ranges can also overlap; an ingredient ID is fresh if it is in any range.
+
+The Elves are trying to determine which of the available ingredient IDs are fresh. In this example, this is done as follows:
+
+Ingredient ID 1 is spoiled because it does not fall into any range.
+Ingredient ID 5 is fresh because it falls into range 3-5.
+Ingredient ID 8 is spoiled.
+Ingredient ID 11 is fresh because it falls into range 10-14.
+Ingredient ID 17 is fresh because it falls into range 16-20 as well as range 12-18.
+Ingredient ID 32 is spoiled.
+So, in this example, 3 of the available ingredient IDs are fresh.
+
+Process the database file from the new inventory management system. How many of the available ingredient IDs are fresh?The Elves in the kitchen explain the situation: because of their complicated new inventory management system, they can't figure out which of their ingredients are fresh and which are spoiled. When you ask how it works, they give you a copy of their database (your puzzle input).
+
+The database operates on ingredient IDs. It consists of a list of fresh ingredient ID ranges, a blank line, and a list of available ingredient IDs. For example:
+
+3-5
+10-14
+16-20
+12-18
+
+1
+5
+8
+11
+17
+32
+The fresh ID ranges are inclusive: the range 3-5 means that ingredient IDs 3, 4, and 5 are all fresh. The ranges can also overlap; an ingredient ID is fresh if it is in any range.
+
+The Elves are trying to determine which of the available ingredient IDs are fresh. In this example, this is done as follows:
+
+Ingredient ID 1 is spoiled because it does not fall into any range.
+Ingredient ID 5 is fresh because it falls into range 3-5.
+Ingredient ID 8 is spoiled.
+Ingredient ID 11 is fresh because it falls into range 10-14.
+Ingredient ID 17 is fresh because it falls into range 16-20 as well as range 12-18.
+Ingredient ID 32 is spoiled.
+So, in this example, 3 of the available ingredient IDs are fresh.
+
+Process the database file from the new inventory management system.
+How many of the available ingredient IDs are fresh?
+
+*** Ideas
+
+The overlapping ranges of fresh ingredients screams /sets/ to me.
+
+In Python, you can create a set from a range like this with a /set
+comprehension/. Say we parse the start and end of a range. Then to
+create a set from that range is as simple as
+
+#+begin_src python
+s = {i for i in range(start, end+1)}
+#+end_src
+
+Even better, we can incorporate it in an existing set with
+
+#+begin_src python
+s |= {i for i in range(start, end+1)}
+#+end_src
+
+i.e. set the set to the union of the existing set and the new set
+created from the range.
+
+So, we need to parse the ranges into sets until we find a blank line.
+Then process the rest of the file to count fresh ingredients.
+
+So, having tried this on the first line of the input,  it's slow. And
+apparently eats too much memory! I had my whole terminal disappear,
+not just the Python interpreter!
+
+Okay, I need a new plan here. I thought the set idea was elegant, as
+it would then be easy to do something like
+
+#+begin_src python
+if ingredient in fresh_set:
+    fresh += 1
+#+end_src
+
+I can fall back to parsing and storing a list of ranges here. It would
+be nice to find overlapping ranges as we parse them, but is it
+actually worth it? Hmm, how about as we add a new range, we check the
+start and end values of the new range to see if they're inside any of
+the existing ranges. If so, figure out if we can extend the existing
+range. I need to figure out an algorithm based on both start and end.
+Let's see....
+
+for all existing ranges:
+    If new_start in existing_range:
+        if new_end in existing_range:
+            new range is fully contained, so throw it away
+        else # new_end > existing_range:
+            set existing end to new_end
+    else if new_start < existing_range:
+        if new_end in existing_range:
+            set existing start to new_start
+        else if new_end > existing_range:
+            set existing start to new_start
+	    set existing end to new end
+if range hasn't been eliminated or combined
+    add it
+
+
+Another idea would be to coalesce adjacent ranges. If one range ends
+at N and another begins at N+1, these two ranges can be combined.
+
+I numerically sorted the ranges, and there are /many/ overlapping
+ranges. It will save a lot of time when scanning the ingredients if we
+combine overlapping and adjacent ranges.
+
+*** Code
+
+**** Create list of ranges
+
+#+begin_src python :tangle 5.py :comments both
+ranges = []
+#+end_src
+
+**** Add a range
+
+Let's start with an initial implementation that just adds the range to
+the list.
+
+#+begin_src python :tangle 5.py :comments both
+def add_range(line):
+    """
+    line should look like
+
+    start-end
+
+    Parse into a list of two integers. Add that list to ranges.
+    """
+
+    global ranges
+
+    elements = line.split('-')
+    start = int(elements[0])
+    end = int(elements[1])
+    ranges.append([start, end])
+#+end_src
+
+**** Process ranges from input file
+
+#+begin_src python :tangle 5.py :comments both
+with open("input.txt", "r") as f:
+    lines = f.read().splitlines()
+in_ranges = True
+n_fresh = 0
+for line in lines:
+    if in_ranges:
+        if len(line) != 0:
+            add_range(line)
+        else:
+            in_ranges = False
+            continue
+    if not in_ranges:
+        ingredient = int(line)
+        for r in ranges:
+            if ingredient in range(r[0], r[1] + 1):
+                n_fresh += 1
+                break
+#+end_src
+
+**** Print number of fresh ingredients
+
+#+begin_src python :tangle 5.py :comments both
+print(n_fresh)
+#+end_src
