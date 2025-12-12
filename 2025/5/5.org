@@ -173,7 +173,7 @@ Let's start with an initial implementation that just adds the range to
 the list.
 
 #+begin_src python :tangle 5.py :comments both
-def add_range(line):
+def add_range_5a(line):
     """
     line should look like
 
@@ -190,30 +190,174 @@ def add_range(line):
     ranges.append([start, end])
 #+end_src
 
-**** Process ranges from input file
+**** Read and split into lines
 
 #+begin_src python :tangle 5.py :comments both
 with open("input.txt", "r") as f:
     lines = f.read().splitlines()
-in_ranges = True
-n_fresh = 0
-for line in lines:
-    if in_ranges:
-        if len(line) != 0:
-            add_range(line)
-        else:
-            in_ranges = False
-            continue
-    if not in_ranges:
-        ingredient = int(line)
-        for r in ranges:
-            if ingredient in range(r[0], r[1] + 1):
-                n_fresh += 1
-                break
 #+end_src
 
-**** Print number of fresh ingredients
+**** Process ranges from input file
 
 #+begin_src python :tangle 5.py :comments both
-print(n_fresh)
+def five_a():
+    in_ranges = True
+    n_fresh = 0
+
+    for line in lines:
+        if in_ranges:
+            if len(line) != 0:
+                add_range(line)
+            else:
+                in_ranges = False
+                continue
+        if not in_ranges:
+            ingredient = int(line)
+            for r in ranges:
+                if ingredient in range(r[0], r[1] + 1):
+                    n_fresh += 1
+                    break
+
+    return(n_fresh)
+#+end_src
+
+** 5b
+
+#+begin_verse
+So that they can stop bugging you when they get new inventory, the Elves would like to know all of the IDs that the fresh ingredient ID ranges consider to be fresh. An ingredient ID is still considered fresh if it is in any range.
+
+Now, the second section of the database (the available ingredient IDs) is irrelevant. Here are the fresh ingredient ID ranges from the above example:
+
+3-5
+10-14
+16-20
+12-18
+The ingredient IDs that these ranges consider to be fresh are 3, 4, 5, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, and 20. So, in this example, the fresh ingredient ID ranges consider a total of 14 ingredient IDs to be fresh.
+
+Process the database file again. How many ingredient IDs are considered to be fresh according to the fresh ingredient ID ranges?
+#+end_verse
+
+*** Ideas
+
+Okay, this may force me into combining overlapping and adjacent
+ranges. I've already shown that Python sets won't work here. But
+essentially you have to figure out the overlap here so you don't
+overcount.
+
+Once you have non-overlapping ranges, you can just compute end+1 -
+start for each range and total those numbers up.
+
+To coalesce and expand ranges efficiently, I propose:
+
+- keep the ranges sorted
+- coalesce and expand ranges as we add new ranges
+
+Sorting the list as new ranges are inserted makes this more efficient
+as we can stop searching the existing ranges at some point. I need to
+figure out what that point is, exactly.
+
+**** Insert range algorithm
+
+- Keep the list sorted as new ranges are addes
+- Expand ranges when a new range overlaps an existing range
+  - Is it possible for a new range to sit on top of multiple existing
+    ranges? Yikes, I'll have to think about this.
+- Coalescing adjacect ranges is a secondary requirement, but if I
+  don't coalesce adjacent ranges, I think a new range that sits over
+  more than one other range is more likely.
+
+
+-------------- r[start] ------------------------- r[end] -----------------
+
+----new[end] -------------------------------------------------------------
+
+------------------------------------------------------------- new[start] -
+
+------------------------- new[start] -------------------------------------
+
+------------------------------------- new[end] ---------------------------
+
+--- new[start] -------------------------------------------- new[end] -----
+
+done = False
+for r in ranges:
+    if new[start] > r[end] or new[end] < r[start]
+        continue
+    if r[start] <= new[start] and new[start] <= r[end] # new start in range
+        r[end] = max(r[end], new[end])
+	done = True
+	break
+    if r[start] <= new[end] and new[end] <= r[end] # new end in range
+        r[start] = min(r[start], new[start])
+	done = True
+	break
+    if new[start] <= r[start] and new[end] >= r[end] # new range surrounds r
+        r[start] = new[start]
+	r[end] = new[end]
+	done = True
+	break
+if not done:
+    append new range
+range = sorted(range)
+
+*** Code
+
+#+begin_src python :tangle 5.py :comments both
+def add_range(line):
+    """
+    line should look like
+
+    start-end
+
+    Parse into a list of two integers. Add that list to ranges.
+    """
+
+    global ranges
+
+    elements = line.split('-')
+    start = int(elements[0])
+    end = int(elements[1])
+
+    done = False
+    for r in ranges:
+        if start <= r[0] and end >= r[1]: # new range surrounds r
+            r[0] = start
+            r[1] = end
+            done = True
+            break
+        if r[0] <= end and end <= r[1]: # end in range
+            r[0] = min(r[0], start)
+            done = True
+            break
+        if r[0] <= start and start <= r[1]: # start inside r
+            r[1] = max(r[1], end)
+            done = True
+            break
+    if not done:
+        ranges.append([start, end])
+    ranges = sorted(ranges)     # is this necessary?
+#+end_src
+
+I'm having some trouble with this loop creating overlapping ranges. I
+probably need to keep a trailing value, or maybe use list indexes
+rather than "for r in ranges", which has no idea of the prior or next
+ranges.
+
+**** Main code
+
+#+begin_src python :tangle 5.py :comments both
+def five_b():
+    global lines
+
+    in_ranges = True
+
+    for line in lines:
+        if in_ranges:
+            if len(line) != 0:
+                add_range(line)
+            else:
+                in_ranges = False
+                continue
+        if not in_ranges:
+            break
 #+end_src
