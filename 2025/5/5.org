@@ -237,7 +237,7 @@ The ingredient IDs that these ranges consider to be fresh are 3, 4, 5, 10, 11, 1
 Process the database file again. How many ingredient IDs are considered to be fresh according to the fresh ingredient ID ranges?
 #+end_verse
 
-*** Ideas
+*** First Ideas
 
 Okay, this may force me into combining overlapping and adjacent
 ranges. I've already shown that Python sets won't work here. But
@@ -300,10 +300,11 @@ if not done:
     append new range
 range = sorted(range)
 
-*** Code
+
+**** First Code
 
 #+begin_src python :tangle 5.py :comments both
-def add_range(line):
+def add_range_old(line):
     """
     line should look like
 
@@ -343,6 +344,81 @@ probably need to keep a trailing value, or maybe use list indexes
 rather than "for r in ranges", which has no idea of the prior or next
 ranges.
 
+
+*** Second idea
+
+The first idea and code, with some variations, left me with some
+overlapping ranges. I don't think Python's "for i in iterator"
+completely works here, without some extra variables to track a
+previous item. So add a previous item variable and coalesce
+overlapping and adjacent ranges based on previous and current.
+
+**** Other idea
+
+- Use indices. Very non-Pythonic.
+- Use iter(ranges) and next(). I don't know if I need this yet.
+
+
+**** Code
+
+***** Add range
+
+#+begin_src python :tangle 5.py :comments both
+def add_range(line):
+    """
+    Parse a line into start and end and add that range to global ranges.
+    line should look like
+
+    start-end
+
+    Parse into a list of two integers. Append that list to ranges.
+    """
+
+    global ranges
+
+    elements = line.split('-')
+    start = int(elements[0])
+    end = int(elements[1])
+
+    ranges.append([start, end])
+#+end_src
+
+***** Coalesce ranges
+
+One thing I've noticed is that modifying a list while iterating over
+it seems to skip over some elements. Note to use of a copy of ranges
+while iterating, but modifying and removing items in the actual ranges.
+
+#+begin_src python :tangle 5.py :comments both
+def coalesce():
+    """
+    Coalesce overlapping and adjacent ranges.
+    """
+
+    global ranges
+
+    previous = None             # previous range
+
+    ranges = sorted(ranges)
+    for r in ranges[:]:
+        if previous is None:    # can't coalesce yet
+            previous = r
+            continue
+
+        start = r[0]
+        end = r[1]
+        prev_start = previous[0]
+        prev_end = previous[1]
+
+        if start <= prev_end or start == prev_end+1:
+            # coalesce prev into r
+            r[0] = prev_start
+            r[1] = max(prev_end, end)
+            ranges.remove(previous)
+
+        previous = r
+#+end_src
+
 **** Main code
 
 #+begin_src python :tangle 5.py :comments both
@@ -357,7 +433,21 @@ def five_b():
                 add_range(line)
             else:
                 in_ranges = False
+                coalesce()
                 continue
         if not in_ranges:
             break
+
+    # Count the ranges. The number of ingredients in a range is end - start + 1.
+    count = 0
+    for r in ranges:
+        count += r[1] + 1 - r[0]
+
+    return count
+#+end_src
+
+Run it.
+
+#+begin_src python :tangle 5.py :comments both
+print(five_b())
 #+end_src
