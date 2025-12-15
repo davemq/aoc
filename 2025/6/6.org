@@ -1,0 +1,129 @@
+* 6
+
+** 6a
+
+#+begin_example
+As you try to find a way out, you are approached by a family of cephalopods! They're pretty sure they can get the door open, but it will take some time. While you wait, they're curious if you can help the youngest cephalopod with her math homework.
+
+Cephalopod math doesn't look that different from normal math. The math worksheet (your puzzle input) consists of a list of problems; each problem has a group of numbers that need to be either added (+) or multiplied (*) together.
+
+However, the problems are arranged a little strangely; they seem to be presented next to each other in a very long horizontal list. For example:
+
+123 328  51 64 
+ 45 64  387 23 
+  6 98  215 314
+,*   +   *   +  
+
+Each problem's numbers are arranged vertically; at the bottom of the problem is the symbol for the operation that needs to be performed. Problems are separated by a full column of only spaces. The left/right alignment of numbers within each problem can be ignored.
+
+So, this worksheet contains four problems:
+
+123 * 45 * 6 = 33210
+328 + 64 + 98 = 490
+51 * 387 * 215 = 4243455
+64 + 23 + 314 = 401
+
+To check their work, cephalopod students are given the grand total of adding together all of the answers to the individual problems. In this worksheet, the grand total is 33210 + 490 + 4243455 + 401 = 4277556.
+
+Of course, the actual worksheet is much wider. You'll need to make sure to unroll it completely so that you can read the problems clearly.
+
+Solve the problems on the math worksheet. What is the grand total found by adding together all of the answers to the individual problems?
+#+end_example
+
+*** Ideas
+
+We read files by rows, but these problems are arranged in columns.
+This is a file of 5 rows, 1000 columns per row, meaning 1000 problems.
+Create a list of 1000 lists to hold the problems. As we read the 5 rows,
+append the fields of those rows to the list for each problem. Convert
+the strings to integers for the rows of numbers.
+
+At this point, the problems should look something like
+
+#+begin_src python
+[58, 6724, 1311, 6245, '+']
+#+end_src
+
+So in this case we want to add the 4 numbers together. We can use
+
+- functools.reduce() to apply a function to the first 4 items until we
+  reduce it to a single value
+- operator.add() as the function to apply
+
+Like so:
+
+#+begin_src python
+import functools
+import operator
+
+answer = functools.reduce(operator.add, problems[0][:-1])
+#+end_src
+
+Alternatively, we could use
+
+#+begin_src python
+sum(problems[0][:-1])
+#+end_src
+
+But this makes two sets of code to do sums or products. If we use
+functools.reduce, we can also set a variable fn to either operator.add
+or operator.mul and use it when we call reduce.
+
+Similarly, if the last item is '*', use operator.mul.
+
+Just add up all the answers as we go, or use sum()
+
+*** Code
+
+**** Imports
+
+#+begin_src python :tangle 6.py :comments both
+import functools
+import operator
+import re
+import sys
+#+end_src
+
+**** Create problems list
+
+#+begin_src python :tangle 6.py :comments both
+problems = []
+for i in range(1000):
+    problems.append([])
+#+end_src
+
+
+**** Read file into problems
+
+#+begin_src python :tangle 6.py :comments both
+with open("input.txt", "r") as f:
+    for line in f:
+        # There are 1 or more spaces between fields. Make it a single space
+        # throughout. Also strip any trailing spaces
+        line = re.sub(" +", " ", line.rstrip())
+        fields = line.split()
+        for i in range(1000):
+            if fields[i].isdecimal():
+                problems[i].append(int(fields[i]))
+            else:
+                problems[i].append(fields[i])
+#+end_src
+
+
+**** Sum up answers
+
+#+begin_src python :tangle 6.py :comments both
+answers_sum = 0
+
+for p in problems:
+    if p[-1] == '+':
+        fn = operator.add
+    elif p[-1] == '*':
+        fn = operator.mul
+    else:
+        sys.exit(f'Unknown operator "{p[-1]}"')
+
+    answers_sum += functools.reduce(fn, p[:-1])
+
+print(answers_sum)
+#+end_src
