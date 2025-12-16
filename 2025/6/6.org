@@ -202,3 +202,7 @@ field? If so, it might be helpful to parse that first to get an idea
 of field size.
 
 I should also check the field sizes for consistency.
+
+Thinking more about this, maybe really parsing from the right to left
+would be the right way to do this. Seems like it could be slow. And I
+don't see a good way to use regular expressions to do it.
