@@ -186,3 +186,19 @@ numeric string, ignoring spaces. Finally, convert to an int.
 
 Hmm, maybe leave the parsed fields in a list of lists. Then do this
 string addition dance and finally put the numbers into problems[i].
+
+Trying this out manually, I found that I got 1000 tokens for the first
+3 lines, but only 999 tokens on the 4th line! Looking a bit closer, it
+looks like the last token on line 4 is "3595" but doesn't have a space
+at the end. Instead, it has end-of-line. So, should I modify the
+regular expression to match this?
+
+Also, given the examples on the web page, I wonder if I'm doing this
+wrong. It seems like short strings could also have leading spaces
+rather than trailing.
+
+I wonder if the operator is always in the left-most character of its
+field? If so, it might be helpful to parse that first to get an idea
+of field size.
+
+I should also check the field sizes for consistency.
