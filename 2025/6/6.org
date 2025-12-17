@@ -77,7 +77,7 @@ Just add up all the answers as we go, or use sum()
 
 **** Imports
 
-#+begin_src python :tangle 6.py :comments both
+#+begin_src python :tangle 6a.py :comments both
 import functools
 import operator
 import re
@@ -86,7 +86,7 @@ import sys
 
 **** Create problems list
 
-#+begin_src python :tangle 6.py :comments both
+#+begin_src python :tangle 6a.py :comments both
 problems = []
 for i in range(1000):
     problems.append([])
@@ -95,7 +95,7 @@ for i in range(1000):
 
 **** Read file into problems
 
-#+begin_src python :tangle 6.py :comments both
+#+begin_src python :tangle 6a.py :comments both
 with open("input.txt", "r") as f:
     for line in f:
         # There are 1 or more spaces between fields. Make it a single space
@@ -112,7 +112,7 @@ with open("input.txt", "r") as f:
 
 **** Sum up answers
 
-#+begin_src python :tangle 6.py :comments both
+#+begin_src python :tangle 6a.py :comments both
 answers_sum = 0
 
 for p in problems:
@@ -191,11 +191,14 @@ Trying this out manually, I found that I got 1000 tokens for the first
 3 lines, but only 999 tokens on the 4th line! Looking a bit closer, it
 looks like the last token on line 4 is "3595" but doesn't have a space
 at the end. Instead, it has end-of-line. So, should I modify the
-regular expression to match this?
+regular expression to match this? I tired to use "\\d+ *(?= |$)" and
+that seems to work correctly.
 
 Also, given the examples on the web page, I wonder if I'm doing this
 wrong. It seems like short strings could also have leading spaces
-rather than trailing.
+rather than trailing. I think this is something I can check
+empirically. A quick check shows no token has leading spaces. Despite
+it being part of the example. So I won't bother handling it.
 
 I wonder if the operator is always in the left-most character of its
 field? If so, it might be helpful to parse that first to get an idea
@@ -206,3 +209,82 @@ I should also check the field sizes for consistency.
 Thinking more about this, maybe really parsing from the right to left
 would be the right way to do this. Seems like it could be slow. And I
 don't see a good way to use regular expressions to do it.
+
+To parse the tokens right to left, get the len of the token in
+lines[0] and then move down the lines to construct the number. I was
+going to add an example, but I think writing the code directly would
+be better.
+
+Okay, I'm running into a token length mismatch when parsing using
+"\\d+ *(?= |$)" and re.findall(). So I'm going to try parsing from
+right to left, starting at the last character of the lines, moving to
+the first. When parsing, a set of numbers is done when all of the
+lines have a space.
+
+*** Code
+
+**** Imports
+
+#+begin_src python :tangle 6b.py :comments both
+import functools
+import operator
+import re
+import sys
+#+end_src
+
+**** Read file into lines
+
+#+begin_src python :tangle 6b.py :comments both
+with open("input.txt", "r") as f:
+    lines = f.read().splitlines()
+#+end_src
+
+**** Parse numbers into problems
+
+#+begin_src python :tangle 6b.py :comments both
+problems = []
+
+# Move right to left. When all lines have space in the particular position,
+# that's the end of a set of numbers and a problem.
+problem_number = 0
+problem = []
+for i in range(len(lines[0]) - 1, -1, -1):
+    number_string = ""
+    for row in range(len(lines) - 1):
+        number_string = number_string + lines[row][i]
+    if len(number_string.strip()) == 0:
+        problems.append(problem)
+        problem_number += 1
+        problem = []
+        continue
+    problem.append(int(number_string))
+if len(problem) != 0:
+    problems.append(problem)
+#+end_src
+
+**** Sum up results of problems
+
+Parse the last line for operators. For each operator, use reduce to
+operate on the list of numbers. Add the result to the sum of results.
+Print the sum.
+
+#+begin_src python :tangle 6b.py :comments both
+results_sum = 0
+
+# Get all the operators. Reverse them, since we parsed the equations
+# from right to left
+operators = [o for o in reversed(re.findall("[+*]", lines[-1]))]
+
+# Operate on problems with operators
+for equation in zip(operators, problems):
+    if equation[0] == '+':
+        fn = operator.add
+    elif equation[0] == '*':
+        fn = operator.mul
+    else:
+        sys.exit(f'invalid operator "{equation[0]}"')
+
+    results_sum += functools.reduce(fn, equation[1])
+
+print(results_sum)
+#+end_src
